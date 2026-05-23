@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>月相變化互動學習 APP｜自然×數學 跨域學習</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c14;--surface:#0e1420;--panel:#131927;--border:#1e2a3d;--border2:#2a3a55;
+  --text:#d8e4f0;--muted:#5a7090;--accent:#f4c842;--accent2:#4da6ff;--accent3:#c084fc;
+  --green:#34d399;--red:#f87171;--sun-color:#fbbf24;
+  --col-main:3;
+}
+/* Device overrides */
+body[data-view="mobile"]{--col-main:1}
+body[data-view="tablet"]{--col-main:2}
+body[data-view="desktop"]{--col-main:3}
+@media(max-width:700px){body:not([data-view="tablet"]):not([data-view="desktop"]){--col-main:1}}
+@media(min-width:701px) and (max-width:1099px){body:not([data-view="mobile"]):not([data-view="desktop"]){--col-main:2}}
+@media(min-width:1100px){body:not([data-view="mobile"]):not([data-view="tablet"]){--col-main:3}}
+
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI','Microsoft JhengHei','微軟正黑體',sans-serif;min-height:100vh;line-height:1.6}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:
+  radial-gradient(1px 1px at 10% 20%,rgba(255,255,255,.6),transparent),
+  radial-gradient(1px 1px at 25% 60%,rgba(255,255,255,.5),transparent),
+  radial-gradient(1px 1px at 40% 10%,rgba(255,255,255,.7),transparent),
+  radial-gradient(1px 1px at 60% 80%,rgba(255,255,255,.4),transparent),
+  radial-gradient(1px 1px at 75% 35%,rgba(255,255,255,.6),transparent),
+  radial-gradient(1.5px 1.5px at 85% 15%,rgba(255,255,255,.5),transparent),
+  radial-gradient(1px 1px at 90% 70%,rgba(255,255,255,.7),transparent),
+  radial-gradient(1px 1px at 15% 75%,rgba(255,255,255,.4),transparent),
+  radial-gradient(1px 1px at 55% 25%,rgba(255,255,255,.5),transparent),
+  radial-gradient(2px 2px at 45% 90%,rgba(255,255,255,.25),transparent),
+  radial-gradient(1px 1px at 80% 50%,rgba(255,255,255,.5),transparent);
+  pointer-events:none}
+#app{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:0 .75rem 2rem}
+
+/* ── LOGIN OVERLAY ───────────────────────────── */
+#loginOverlay{
+  position:fixed;inset:0;z-index:9000;
+  background:radial-gradient(ellipse at 50% 40%,#0a1428 0%,#040810 100%);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;padding:1.5rem;
+}
+.login-box{
+  width:100%;max-width:420px;
+  background:#0e1828;border:1px solid #1e3050;border-radius:18px;
+  padding:2.5rem 2rem;text-align:center;
+  box-shadow:0 0 60px rgba(77,166,255,.12),0 0 120px rgba(244,200,66,.06);
+}
+.login-moon{font-size:4rem;margin-bottom:.5rem;display:block}
+.login-title{font-size:1.5rem;font-weight:800;
+  background:linear-gradient(135deg,#f4c842,#fff8c0,#a78bfa);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:.25rem}
+.login-sub{font-size:.78rem;color:#5a7090;margin-bottom:1.75rem}
+.login-field{
+  width:100%;background:#060d18;border:1px solid #1e3050;
+  border-radius:8px;color:var(--text);font-size:1rem;
+  padding:12px 14px;outline:none;font-family:inherit;
+  transition:border-color .2s;margin-bottom:1rem;text-align:left;
+}
+.login-field:focus{border-color:var(--accent2)}
+.login-field::placeholder{color:#3a5070}
+.login-btn{
+  width:100%;padding:13px;border:none;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),#e0b830);
+  color:#0a0e18;font-size:1rem;font-weight:800;cursor:pointer;
+  font-family:inherit;transition:all .2s;margin-top:.25rem;
+}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(244,200,66,.3)}
+.login-err{color:var(--red);font-size:.78rem;margin-top:.5rem;min-height:1.2em}
+.login-note{font-size:.68rem;color:#3a5070;margin-top:1.25rem}
+
+/* ── HEADER ──────────────────────────────────── */
+.app-header{text-align:center;padding:1.25rem .5rem .75rem;position:relative}
+.app-header .badge{
+  display:inline-block;background:linear-gradient(135deg,#1a2a45,#0e1c35);
+  border:1px solid var(--border2);color:var(--accent2);font-size:.72rem;
+  font-weight:700;letter-spacing:1.5px;padding:3px 12px;border-radius:20px;margin-bottom:8px}
+.app-header h1{
+  font-size:clamp(1.3rem,4vw,2.2rem);font-weight:800;
+  background:linear-gradient(135deg,#f4c842,#fff8c0,#a78bfa);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:.25rem}
+.app-header p{color:var(--muted);font-size:.78rem;max-width:680px;margin:0 auto}
+
+/* User bar */
+.user-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:.5rem;
+  background:#0a1422;border:1px solid var(--border);border-radius:10px;
+  padding:.5rem 1rem;margin-bottom:.75rem;font-size:.78rem;
+}
+.user-info{display:flex;align-items:center;gap:.5rem}
+.user-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,#1e3a8a,#3b82f6);
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;flex-shrink:0;
+}
+.user-name{font-weight:700;color:var(--accent)}
+.user-id{color:var(--muted)}
+.user-actions{display:flex;align-items:center;gap:.5rem}
+
+/* Device selector */
+.device-sel{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:2px}
+.dev-btn{
+  padding:4px 8px;border:none;border-radius:5px;background:transparent;
+  color:var(--muted);font-size:.72rem;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap;
+}
+.dev-btn.active{background:var(--panel);color:var(--accent);box-shadow:0 1px 4px rgba(244,200,66,.1)}
+.sync-indicator{display:flex;align-items:center;gap:4px;font-size:.7rem;color:var(--muted);cursor:help}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .3s}
+.sync-dot.ok{background:var(--green)}
+.sync-dot.err{background:var(--red)}
+.sync-dot.sending{background:var(--accent);animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── TABS ────────────────────────────────────── */
+.tab-bar{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:3px;margin-bottom:1.25rem;overflow-x:auto}
+.tab-btn{flex:1;min-width:90px;padding:9px 12px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .25s;white-space:nowrap;font-family:inherit}
+.tab-btn.active{background:linear-gradient(135deg,#1a3055,#0f2040);color:var(--accent);box-shadow:0 2px 10px rgba(244,200,66,.12)}
+.tab-btn:hover:not(.active){color:var(--text);background:var(--panel)}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* ── CARD ────────────────────────────────────── */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:1.1rem;transition:border-color .3s}
+.card-title{font-size:.92rem;font-weight:700;color:var(--text);margin-bottom:.9rem;display:flex;align-items:center;gap:6px}
+
+/* ── GRID (RWD) ──────────────────────────────── */
+.grid-main{
+  display:grid;
+  grid-template-columns:repeat(var(--col-main),1fr);
+  gap:.9rem;margin-bottom:.9rem;
+}
+/* When col=3, last card (info panel) gets its own column */
+body[data-view="desktop"] .grid-main .info-card,
+@media(min-width:1100px){.grid-main .info-card}{grid-column:auto}
+
+.grid-2{display:grid;grid-template-columns:repeat(min(var(--col-main),2),1fr);gap:.9rem;margin-bottom:.9rem}
+@media(max-width:600px){.grid-2{grid-template-columns:1fr}}
+body[data-view="mobile"] .grid-2{grid-template-columns:1fr}
+
+/* ── CANVAS ──────────────────────────────────── */
+.canvas-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#050810;border-radius:9px;border:1px solid var(--border);padding:.75rem;min-height:220px;position:relative}
+.canvas-label{font-size:.68rem;color:var(--muted);margin-top:6px;text-align:center}
+canvas{display:block;max-width:100%;height:auto}
+
+/* ── SLIDER ──────────────────────────────────── */
+.slider-section{margin-top:.5rem}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:.5rem}
+.slider-label{font-size:.82rem;font-weight:600;color:var(--text)}
+.angle-display{font-size:1.5rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--border2);outline:none;cursor:pointer;touch-action:manipulation}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle,#fff 30%,var(--accent));cursor:pointer;box-shadow:0 0 10px rgba(244,200,66,.5)}
+.slider-marks{display:flex;justify-content:space-between;margin-top:5px}
+.slider-marks span{font-size:.6rem;color:var(--muted);text-align:center}
+
+/* ── PHASE TIMELINE ──────────────────────────── */
+.phase-timeline{display:flex;gap:3px;margin:.6rem 0;overflow-x:auto;padding-bottom:4px}
+.pt-item{flex:0 0 auto;min-width:52px;height:38px;border-radius:5px;font-size:.58rem;color:var(--muted);display:flex;align-items:center;justify-content:center;font-weight:600;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .2s;text-align:center;line-height:1.2;padding:2px}
+.pt-item.active{background:linear-gradient(135deg,rgba(244,200,66,.2),rgba(244,200,66,.05));border-color:var(--accent);color:var(--accent)}
+.pt-item:hover:not(.active){border-color:var(--border2);color:var(--text)}
+
+/* ── INFO PANEL ──────────────────────────────── */
+.phase-badge{background:linear-gradient(135deg,rgba(244,200,66,.15),rgba(244,200,66,.05));border:1px solid rgba(244,200,66,.3);border-radius:8px;padding:10px;text-align:center;margin-bottom:.7rem}
+.phase-badge .name{font-size:1.3rem;font-weight:800;color:var(--accent)}
+.phase-badge .desc{font-size:.68rem;color:var(--muted);margin-top:3px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem}
+.info-item{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px}
+.info-item .label{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.info-item .value{font-size:1rem;font-weight:700;color:var(--text);margin-top:2px}
+.info-item .value.accent{color:var(--accent)}.info-item .value.blue{color:var(--accent2)}.info-item .value.purple{color:var(--accent3)}.info-item .value.green{color:var(--green)}
+.brightness-bar-wrap{margin-bottom:.7rem}
+.brightness-bar-wrap .blabel{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:3px}
+.brightness-bar{height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.brightness-bar-fill{height:100%;background:linear-gradient(90deg,#f4c842,#fff8c0);border-radius:4px;transition:width .3s ease}
+.time-info{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;margin-bottom:.7rem}
+.time-info .ti-title{font-size:.65rem;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.8px;text-transform:uppercase}
+.time-info .ti-row{display:flex;justify-content:space-between;font-size:.7rem;padding:1px 0}
+.time-info .ti-row .ti-key{color:var(--muted)}.time-info .ti-row .ti-val{color:var(--accent2);font-weight:600}
+
+/* ── CROSS CONCEPT ───────────────────────────── */
+.cross-concept{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:.7rem;line-height:1.7}
+.cross-concept .cc-title{font-weight:700;font-size:.75rem;color:var(--text);margin-bottom:5px}
+.cc-sci{color:#67e8f9}.cc-math{color:#86efac}.cc-formula{color:var(--accent3);font-family:'Courier New',monospace}
+
+/* ── TEACH CARD ──────────────────────────────── */
+.teach-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px}
+.teach-card .tc-head{font-size:.78rem;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.teach-card ul,.teach-card ol{padding-left:14px;font-size:.72rem;color:#9baac0;line-height:1.8}
+
+/* ── QUIZ ────────────────────────────────────── */
+.quiz-layout{display:grid;grid-template-columns:repeat(min(var(--col-main),2),1fr);gap:.9rem;margin-bottom:.9rem}
+body[data-view="mobile"] .quiz-layout{grid-template-columns:1fr}
+@media(max-width:700px){.quiz-layout:not(body[data-view="tablet"] .quiz-layout):not(body[data-view="desktop"] .quiz-layout){grid-template-columns:1fr}}
+.quiz-qtype{font-size:.65rem;font-weight:700;color:var(--accent2);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px}
+.quiz-q{color:var(--text);font-size:.92rem;line-height:1.6}
+.quiz-q .hl{color:var(--accent);font-weight:700}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:.75rem}
+body[data-view="mobile"] .quiz-options{grid-template-columns:1fr}
+@media(max-width:500px){.quiz-options:not(body[data-view="tablet"] .quiz-options):not(body[data-view="desktop"] .quiz-options){grid-template-columns:1fr}}
+.opt-btn{padding:11px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:.82rem;font-weight:500;cursor:pointer;transition:all .2s;text-align:left;font-family:inherit;touch-action:manipulation}
+.opt-btn:hover:not(:disabled){border-color:var(--accent2);color:var(--accent2)}
+.opt-btn.correct{border-color:var(--green);background:rgba(52,211,153,.1);color:var(--green)}
+.opt-btn.wrong{border-color:var(--red);background:rgba(248,113,113,.1);color:var(--red)}
+.opt-btn:disabled{cursor:default}
+.quiz-feedback{min-height:44px;padding:9px 12px;border-radius:7px;font-size:.82rem;font-weight:500;margin-bottom:.65rem;display:none}
+.quiz-feedback.show{display:block}
+.quiz-feedback.correct-fb{background:rgba(52,211,153,.1);border:1px solid var(--green);color:var(--green)}
+.quiz-feedback.wrong-fb{background:rgba(248,113,113,.1);border:1px solid var(--red);color:var(--red)}
+.score-board{display:flex;gap:.6rem;margin-bottom:.9rem;flex-wrap:wrap}
+.score-item{flex:1;min-width:70px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center}
+.score-item .s-num{font-size:1.3rem;font-weight:800}
+.score-item .s-label{font-size:.62rem;color:var(--muted)}
+.score-item.correct .s-num{color:var(--green)}.score-item.wrong .s-num{color:var(--red)}.score-item.total .s-num{color:var(--accent2)}.score-item.pct .s-num{color:var(--accent3)}
+.quiz-moon-wrap{display:flex;justify-content:center;background:#050810;border-radius:7px;padding:.65rem;border:1px solid var(--border);margin-bottom:.65rem}
+
+/* ── BUTTONS ─────────────────────────────────── */
+.btn{padding:9px 18px;border-radius:7px;border:none;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;touch-action:manipulation}
+.btn-primary{background:var(--accent);color:#0a0e18}.btn-primary:hover{background:#ffe066}
+.btn-secondary{background:var(--border2);color:var(--text)}.btn-secondary:hover{background:#374567}
+.btn-blue{background:var(--accent2);color:#0a0e18}.btn-blue:hover{background:#6cbeff}
+.btn-red{background:#ef4444;color:#fff}.btn-red:hover{background:#dc2626}
+.quiz-controls{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ── REFLECT ─────────────────────────────────── */
+.reflect-card{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:1.1rem;margin-top:.9rem}
+textarea{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:.82rem;padding:10px;resize:vertical;min-height:90px;outline:none;font-family:inherit;transition:border-color .2s;line-height:1.7}
+textarea:focus{border-color:var(--accent2)}
+.reflect-controls{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:8px}
+.reflect-msg{font-size:.78rem;font-weight:600}
+.reflect-msg.ok{color:var(--green)}.reflect-msg.err{color:var(--red)}
+.saved-list{margin-top:.75rem;display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto}
+.saved-item{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-size:.72rem;color:#9baac0;position:relative}
+.saved-item .si-time{color:var(--muted);font-size:.62rem;margin-bottom:2px}
+.saved-item .si-del{position:absolute;right:7px;top:7px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.72rem}
+.saved-item .si-del:hover{color:var(--red)}
+
+/* ── TEACHER TAB ─────────────────────────────── */
+.md-section{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:1.1rem;margin-bottom:.9rem}
+.md-section h2{font-size:.95rem;font-weight:700;color:var(--accent);margin-bottom:.75rem;display:flex;align-items:center;gap:7px}
+.md-section h3{font-size:.82rem;font-weight:700;color:var(--accent2);margin:.9rem 0 .4rem}
+.md-section p{font-size:.78rem;color:#9baac0;line-height:1.8;margin-bottom:.4rem}
+.md-section ol,.md-section ul{padding-left:16px;font-size:.78rem;color:#9baac0;line-height:1.9;margin-bottom:.4rem}
+.md-section li strong{color:var(--text)}
+.md-codeblock{background:#050810;border:1px solid var(--border2);border-radius:7px;padding:.85rem;margin:.65rem 0;font-family:'Courier New','Consolas',monospace;font-size:.68rem;color:#a8c4e0;line-height:1.8;overflow-x:auto;white-space:pre;position:relative}
+.copy-btn{position:absolute;top:7px;right:7px;padding:3px 9px;border-radius:4px;border:1px solid var(--border2);background:var(--panel);color:var(--muted);font-size:.62rem;cursor:pointer;font-family:inherit;transition:all .2s}
+.copy-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.md-flow{display:flex;flex-wrap:wrap;gap:6px;margin:.65rem 0}
+.flow-step{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:5px 10px;font-size:.72rem}
+.flow-step .step-num{width:18px;height:18px;border-radius:50%;background:var(--accent2);color:#0a0e18;font-weight:800;font-size:.65rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.flow-arrow{color:var(--muted);font-size:1rem}
+
+/* GS setup box */
+.gs-setup{background:#050e1c;border:1px solid #1a3a5a;border-radius:9px;padding:1rem;margin:.75rem 0}
+.gs-setup h4{font-size:.82rem;font-weight:700;color:#67e8f9;margin-bottom:.6rem;display:flex;align-items:center;gap:6px}
+.gs-setup input{width:100%;background:#080d18;border:1px solid #1e3050;border-radius:6px;color:var(--text);font-size:.78rem;padding:9px 10px;outline:none;font-family:'Courier New',monospace;margin:.4rem 0;transition:border-color .2s}
+.gs-setup input:focus{border-color:var(--accent2)}
+.gs-setup input::placeholder{color:#3a5070}
+.gs-status{font-size:.72rem;margin-top:.5rem;padding:6px 10px;border-radius:5px}
+.gs-status.ok{background:rgba(52,211,153,.1);border:1px solid var(--green);color:var(--green)}
+.gs-status.err{background:rgba(248,113,113,.1);border:1px solid var(--red);color:var(--red)}
+.gs-status.info{background:rgba(77,166,255,.1);border:1px solid var(--accent2);color:var(--accent2)}
+
+/* ── PHASE TABLE ─────────────────────────────── */
+.phase-tbl{width:100%;border-collapse:collapse;font-size:.7rem}
+.phase-tbl th{padding:5px 7px;text-align:left;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600}
+.phase-tbl td{padding:5px 7px;border-bottom:1px solid rgba(30,42,61,.5)}
+.phase-tbl tr:hover td{background:rgba(30,42,61,.4)}
+
+/* ── FIREWORKS ───────────────────────────────── */
+#fireworks-canvas{position:fixed;inset:0;pointer-events:none;z-index:9999;display:none}
+
+/* ── SCROLLBAR ───────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── TAG ─────────────────────────────────────── */
+.tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:.62rem;font-weight:700}
+.tag-sci{background:rgba(103,232,249,.15);color:#67e8f9}
+.tag-math{background:rgba(134,239,172,.15);color:#86efac}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN OVERLAY ═════════════════════════════ -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <span class="login-moon">🌙</span>
+    <div class="login-title">月相變化互動學習 APP</div>
+    <div class="login-sub">自然 × 數學 跨域學習｜請輸入學號與姓名登入</div>
+    <input class="login-field" id="loginId"   type="text" placeholder="學號（例：B11234567）" maxlength="20" autocomplete="off">
+    <input class="login-field" id="loginName" type="text" placeholder="姓名（例：王小明）"       maxlength="10" autocomplete="off">
+    <button class="login-btn" onclick="doLogin()">🚀 開始學習</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-note">⚠️ 答題與反思紀錄將上傳至 Google Sheet（由老師管理）<br>
+      💡 登入後請完成：互動觀測 → 答題挑戰 → 學習反思 → 儲存並上傳</div>
+  </div>
+</div>
+
+<!-- ══ FIREWORKS ══════════════════════════════════ -->
+<canvas id="fireworks-canvas"></canvas>
+
+<!-- ══ APP SHELL ═════════════════════════════════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="badge">🌙 自然 × 數學 跨域互動學習</div>
+    <h1>月相變化互動學習 APP</h1>
+    <p>以日-地-月夾角θ為核心，連結自然科月相原理與數學幾何推算</p>
+  </header>
+
+  <!-- USER BAR -->
+  <div class="user-bar">
+    <div class="user-info">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div>
+        <span class="user-name" id="userName">未登入</span>
+        <span class="user-id" id="userId"> </span>
+      </div>
+    </div>
+    <div class="user-actions">
+      <!-- Sync indicator -->
+      <div class="sync-indicator" id="syncIndicator" title="資料同步狀態">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncLabel">未設定</span>
+      </div>
+      <!-- Device selector -->
+      <div class="device-sel">
+        <button class="dev-btn" onclick="setDevice('auto')"    id="dev-auto"   >⚙️自動</button>
+        <button class="dev-btn" onclick="setDevice('mobile')"  id="dev-mobile" >📱手機</button>
+        <button class="dev-btn" onclick="setDevice('tablet')"  id="dev-tablet" >📟平板</button>
+        <button class="dev-btn" onclick="setDevice('desktop')" id="dev-desktop">🖥️電腦</button>
+      </div>
+      <button class="btn btn-secondary" style="padding:5px 10px;font-size:.72rem" onclick="doLogout()">🚪 登出</button>
+      <button class="btn btn-secondary" style="padding:5px 10px;font-size:.72rem;color:#f87171;border-color:#f87171" onclick="resetLogin()" title="清除登入記錄，回到登入畫面（測試用）">🔄 重置</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('observe')" id="tab-observe">🔭 互動觀測</button>
+    <button class="tab-btn" onclick="switchTab('quiz')"    id="tab-quiz"   >🎯 答題挑戰</button>
+    <button class="tab-btn" onclick="switchTab('teacher')" id="tab-teacher">📚 教師共備</button>
+  </nav>
+
+  <!-- ══ TAB 1: 互動觀測 ══════════════════════════ -->
+  <div class="tab-pane active" id="pane-observe">
+
+    <div class="grid-main">
+
+      <!-- 地球觀測者視角 -->
+      <div class="card">
+        <div class="card-title"><span>🌍</span>地球觀測者視角（台灣・北半球）</div>
+        <div class="canvas-wrap">
+          <canvas id="earthCanvas" width="210" height="210"></canvas>
+          <div class="canvas-label" id="earthLabel">新月 — 月亮整面暗，不可見</div>
+        </div>
+        <div class="phase-timeline" id="phaseTimeline">
+          <div class="pt-item active" data-angle="0">🌑<br>新月</div>
+          <div class="pt-item" data-angle="45">🌒<br>眉月</div>
+          <div class="pt-item" data-angle="90">🌓<br>上弦</div>
+          <div class="pt-item" data-angle="135">🌔<br>盈凸</div>
+          <div class="pt-item" data-angle="180">🌕<br>滿月</div>
+          <div class="pt-item" data-angle="225">🌖<br>虧凸</div>
+          <div class="pt-item" data-angle="270">🌗<br>下弦</div>
+          <div class="pt-item" data-angle="315">🌘<br>殘月</div>
+        </div>
+        <div class="slider-section">
+          <div class="slider-header">
+            <div>
+              <div class="slider-label">調整日地月夾角 θ</div>
+              <div style="font-size:.65rem;color:var(--muted)">（以地球為頂點，太陽-地球-月球夾角）</div>
+            </div>
+            <div class="angle-display" id="angleDisplay">0°</div>
+          </div>
+          <input type="range" id="angleSlider" min="0" max="360" value="0" step="1">
+          <div class="slider-marks">
+            <span>0°<br>新月</span><span>90°<br>上弦月</span>
+            <span>180°<br>滿月</span><span>270°<br>下弦月</span><span>360°</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 太空俯視圖 -->
+      <div class="card">
+        <div class="card-title"><span>🚀</span>太空俯視圖（北天極俯視）</div>
+        <div class="canvas-wrap">
+          <canvas id="spaceCanvas" width="255" height="255"></canvas>
+          <div class="canvas-label">日－地－月幾何位置（月球逆時針公轉）</div>
+        </div>
+        <div class="cross-concept" style="margin-top:.65rem">
+          <div class="cc-title">🔗 跨域概念連結</div>
+          <p><span class="cc-sci">🔵 自然：</span>月相由日-地-月夾角θ決定，朔望月≈29.53天</p>
+          <p><span class="cc-math">🟢 數學：</span>每日均角 = 360°÷29.53 ≈ <strong>12.2°/天</strong></p>
+          <p><span class="cc-formula">📐 L = (1 − cos θ) ÷ 2</span>&nbsp;&nbsp;<span class="cc-formula">📅 D = θ÷360×29.53</span></p>
+        </div>
+        <div class="teach-card" style="margin-top:.65rem">
+          <div class="tc-head" style="color:var(--accent)">⚠️ 台灣觀測重點</div>
+          <ul>
+            <li>台灣（北半球）觀月面向<strong>南方</strong>天空</li>
+            <li><strong>上弦月</strong>（初七/八）：亮面在<strong>右側（西側）</strong>，日落後南方可見</li>
+            <li><strong>下弦月</strong>（廿二/三）：亮面在<strong>左側（東側）</strong>，日出前南方可見</li>
+            <li>月球公轉：<strong>由西向東（逆時針）</strong>，月出每天延遲約50分鐘</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 資訊面板 -->
+      <div class="card info-card">
+        <div class="card-title"><span>📊</span>學習資訊</div>
+        <div class="phase-badge">
+          <div class="name" id="phaseName">🌑 新月</div>
+          <div class="desc" id="phaseDesc">農曆初一（朔）— 月球位於太陽與地球之間</div>
+        </div>
+        <div class="brightness-bar-wrap">
+          <div class="blabel"><span>月面可見亮度</span><span id="brightnessLabel">0%</span></div>
+          <div class="brightness-bar"><div class="brightness-bar-fill" id="brightnessBar" style="width:0%"></div></div>
+        </div>
+        <div class="info-grid">
+          <div class="info-item"><div class="label">農曆日期</div><div class="value accent" id="lunarDay">第 1 天</div></div>
+          <div class="info-item"><div class="label">亮度 L</div><div class="value blue" id="lunarBright">0.00</div></div>
+          <div class="info-item"><div class="label">角度/天</div><div class="value purple">≈12.2°</div></div>
+          <div class="info-item"><div class="label">夾角 θ</div><div class="value green" id="thetaVal">0°</div></div>
+        </div>
+        <div class="time-info">
+          <div class="ti-title">⏰ 觀測時間（台灣）</div>
+          <div class="ti-row"><span class="ti-key">月出</span><span class="ti-val" id="moonRise">約06:00</span></div>
+          <div class="ti-row"><span class="ti-key">月中天</span><span class="ti-val" id="moonTransit">約12:00</span></div>
+          <div class="ti-row"><span class="ti-key">月落</span><span class="ti-val" id="moonSet">約18:00</span></div>
+          <div class="ti-row"><span class="ti-key">最佳觀測</span><span class="ti-val" id="bestView">不易觀測</span></div>
+        </div>
+        <div class="time-info">
+          <div class="ti-title">📐 數學計算</div>
+          <div class="ti-row"><span class="ti-key">cos θ</span><span class="ti-val" id="cosVal">1.000</span></div>
+          <div class="ti-row"><span class="ti-key">1 − cos θ</span><span class="ti-val" id="oneMinCos">0.000</span></div>
+          <div class="ti-row"><span class="ti-key">L = ÷2</span><span class="ti-val" id="lVal">0.000</span></div>
+          <div class="ti-row"><span class="ti-key">D(天)</span><span class="ti-val" id="dVal">0.0</span></div>
+        </div>
+      </div>
+
+    </div><!-- /grid-main -->
+
+    <!-- Bottom: teach + table -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span>📖</span>教學說明</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+          <div class="teach-card">
+            <div class="tc-head" style="color:#67e8f9"><span class="tag tag-sci">自然科</span></div>
+            <ul>
+              <li>月球靠反射太陽光發亮，非自行發光</li>
+              <li>夾角θ決定可見亮面比例</li>
+              <li>朔望月29.53天，農曆初一=新月，十五=滿月</li>
+              <li>台灣：上弦月亮面在右，下弦月在左</li>
+            </ul>
+          </div>
+          <div class="teach-card">
+            <div class="tc-head" style="color:#86efac"><span class="tag tag-math">數學科</span></div>
+            <ul>
+              <li>亮度函數：L(θ)=(1−cosθ)/2</li>
+              <li>週期比例：360°↔29.53天</li>
+              <li>角度/弧度換算</li>
+              <li>極坐標描述月球軌道位置</li>
+            </ul>
+          </div>
+        </div>
+        <div class="teach-card">
+          <div class="tc-head" style="color:var(--accent)">🎓 教學流程</div>
+          <ol>
+            <li>拖曳滑桿到0°/90°/180°/270°，觀察四大代表月相</li>
+            <li>對照太空俯視圖，理解幾何位置與月相外觀的對應</li>
+            <li>用L=(1−cosθ)/2計算亮度，驗算與滑桿顯示是否相符</li>
+            <li>討論台灣特色：上弦月亮面在右、下弦月在左</li>
+            <li>進行答題挑戰，完成學習反思</li>
+          </ol>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>🌙</span>八大月相對照表</div>
+        <div style="overflow-x:auto">
+          <table class="phase-tbl">
+            <thead><tr>
+              <th>月相</th><th>θ角</th><th>農曆</th><th>亮面(台灣)</th><th>最佳觀測</th>
+            </tr></thead>
+            <tbody id="phaseTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /pane-observe -->
+
+  <!-- ══ TAB 2: 答題挑戰 ════════════════════════════ -->
+  <div class="tab-pane" id="pane-quiz">
+    <div class="score-board">
+      <div class="score-item correct"><div class="s-num" id="scoreCorrect">0</div><div class="s-label">✅答對</div></div>
+      <div class="score-item wrong"  ><div class="s-num" id="scoreWrong"  >0</div><div class="s-label">❌答錯</div></div>
+      <div class="score-item total"  ><div class="s-num" id="scoreTotal"  >0</div><div class="s-label">📝作答</div></div>
+      <div class="score-item pct"    ><div class="s-num" id="scorePct"    >—</div><div class="s-label">🎯正確率</div></div>
+    </div>
+    <div class="quiz-layout">
+      <div>
+        <div class="card" style="margin-bottom:.65rem">
+          <div class="quiz-qtype" id="quizQType">月相辨識</div>
+          <div class="quiz-q"    id="quizQuestion">題目載入中...</div>
+        </div>
+        <div class="quiz-moon-wrap" id="quizMoonWrap" style="display:none">
+          <canvas id="quizMoonCanvas" width="150" height="150"></canvas>
+        </div>
+        <div class="quiz-feedback" id="quizFeedback"></div>
+        <div class="quiz-controls">
+          <button class="btn btn-secondary" onclick="generateNewQuiz()">➡️ 下一題</button>
+          <button class="btn btn-secondary" onclick="resetScore()">🔄 重置</button>
+        </div>
+      </div>
+      <div>
+        <div class="card-title" style="margin-bottom:.65rem"><span>📝</span>請選擇答案：</div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div style="font-size:.68rem;color:var(--muted)">選擇後立即判斷，再按「下一題」繼續</div>
+      </div>
+    </div>
+
+    <!-- Reflection -->
+    <div class="reflect-card">
+      <div class="card-title"><span>✍️</span>學習反思</div>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:8px">根據今天的觀察與測驗，寫下你對月相的理解或還有疑問的地方：</p>
+      <textarea id="reflectionText" placeholder="例如：我發現上弦月的亮面在右邊，是因為太陽在西方（右方）照射月球。用L=(1-cos90°)/2=0.5計算出亮度50%，剛好是半月..."></textarea>
+      <div class="reflect-controls">
+        <button class="btn btn-primary"   onclick="saveReflection()">💾 儲存並上傳</button>
+        <button class="btn btn-secondary" onclick="loadExample()">📋 示例</button>
+        <span class="reflect-msg" id="reflectMsg"></span>
+      </div>
+      <div class="saved-list" id="savedList"></div>
+    </div>
+  </div><!-- /pane-quiz -->
+
+  <!-- ══ TAB 3: 教師共備 ════════════════════════════ -->
+  <div class="tab-pane" id="pane-teacher">
+
+    <!-- Google Sheet 設定 -->
+    <div class="md-section">
+      <h2>🔗 Google Sheet 資料串接設定</h2>
+      <p>本 App 可將學生的答題紀錄與學習反思自動寫入 Google Sheet。需先完成以下三步驟：</p>
+
+      <div class="gs-setup">
+        <h4>📋 步驟一：建立 Google Apps Script</h4>
+        <p style="font-size:.72rem;color:#9baac0;margin-bottom:.5rem">
+          ① 開啟 <a href="https://docs.google.com/spreadsheets/d/1NZy81I3hKw3C9-1fzf51h-lGweVT0nFowXNk_n_QaDU" target="_blank" style="color:var(--accent2)">Google Sheet</a>
+          →「擴充功能」→「Apps Script」<br>
+          ② 全選並貼上下方程式碼 → 按💾儲存<br>
+          ③「部署」→「新增部署作業」→ 類型：<strong style="color:#f4c842">網路應用程式</strong><br>
+          ④ 執行身分：<strong style="color:#f4c842">我</strong>，存取權限：<strong style="color:#f4c842">任何人</strong> → 部署<br>
+          ⑤ 複製「網路應用程式 URL」（/exec 結尾），貼入步驟二
+        </p>
+        <p style="font-size:.68rem;background:rgba(52,211,153,.1);border:1px solid #34d399;color:#34d399;padding:6px 10px;border-radius:5px;margin-bottom:.4rem">
+          ✅ 測試方法：在瀏覽器直接開啟 /exec 網址，若出現 {"ok":true} 代表部署成功！
+        </p>
+        <!-- 用 textarea 確保程式碼完整顯示，可直接全選複製 -->
+        <div style="position:relative;margin-top:.5rem">
+          <button class="copy-btn" style="position:absolute;top:6px;right:6px;z-index:2" onclick="copyScriptCode()">📋 全部複製</button>
+          <textarea id="scriptCodeArea" readonly rows="18"
+            style="width:100%;background:#030609;border:1px solid #1a3a5a;border-radius:6px;
+                   color:#7ec8e3;font-family:'Courier New','Consolas',monospace;font-size:.7rem;
+                   padding:10px;resize:vertical;outline:none;line-height:1.7;
+                   white-space:pre;overflow:auto;"
+          ></textarea>
+        </div>
+        <p style="font-size:.65rem;color:#3a5070;margin-top:.4rem">💡 提示：點入程式碼框後按 Ctrl+A 全選，再 Ctrl+C 複製</p>
+      </div>
+
+      <div class="gs-setup">
+        <h4>🔗 步驟二：貼上部署網址</h4>
+        <p style="font-size:.72rem;color:#9baac0;margin-bottom:.4rem">
+          Apps Script 編輯器 →「部署」→「管理部署作業」→ 複製「網路應用程式 URL」（格式如下）貼在下方：
+        </p>
+        <p style="font-size:.68rem;color:#3a5070;margin-bottom:.4rem;font-family:'Courier New',monospace">
+          https://script.google.com/macros/s/AKfycbxvkotTfvjUaS46pfuwXbbKWTN_HPP7ehaoRQ18kUmqoZOWOXW0nt9wnRVqzNfsBvAo/exec
+        </p>
+        <input id="gsUrlInput" type="text" placeholder="https://script.google.com/macros/s/AKfycbxvkotTfvjUaS46pfuwXbbKWTN_HPP7ehaoRQ18kUmqoZOWOXW0nt9wnRVqzNfsBvAo/exec">
+        <div style="display:flex;gap:7px;margin-top:.5rem;flex-wrap:wrap">
+          <button class="btn btn-blue" onclick="saveGsUrl()">💾 儲存網址</button>
+          <button class="btn btn-secondary" onclick="testGsUrl()">🧪 測試連線</button>
+          <button class="btn btn-red" onclick="clearGsUrl()">🗑️ 清除</button>
+        </div>
+        <div class="gs-status info" id="gsStatus">尚未設定 Apps Script 網址，資料暫存於 localStorage</div>
+      </div>
+
+      <div class="gs-setup">
+        <h4>📊 步驟三：查看 Google Sheet 資料</h4>
+        <p style="font-size:.72rem;color:#9baac0">資料寫入後，可在以下連結查看：</p>
+        <a href="https://docs.google.com/spreadsheets/d/1NZy81I3hKw3C9-1fzf51h-lGweVT0nFowXNk_n_QaDU/edit" target="_blank"
+           style="color:var(--accent2);font-size:.78rem;text-decoration:none">
+          📊 開啟 Google Sheet →
+        </a>
+        <p style="font-size:.68rem;color:#3a5070;margin-top:.4rem">試算表會自動建立「答題紀錄」與「學習反思」兩個工作表</p>
+      </div>
+    </div>
+
+    <!-- Markdown template -->
+    <div class="md-section">
+      <h2>📋 教師跨域共備 Markdown 模板</h2>
+      <p>以下模板可直接複製並貼入 Gemini/Claude/ChatGPT，略做修改即可生成適用的互動學習 App：</p>
+      <div style="position:relative;margin-top:.5rem">
+        <button class="copy-btn" style="position:absolute;top:6px;right:6px;z-index:2" onclick="copyMarkdownCode()">📋 全部複製</button>
+        <textarea id="markdownArea" readonly rows="20"
+          style="width:100%;background:#030609;border:1px solid #1a3a5a;border-radius:6px;
+                 color:#86efac;font-family:'Courier New','Consolas',monospace;font-size:.72rem;
+                 padding:10px;resize:vertical;outline:none;line-height:1.7;
+                 white-space:pre;overflow:auto;"
+        ></textarea>
+      </div>
+      <p style="font-size:.65rem;color:#3a5070;margin-top:.4rem">💡 提示：點入文字框後按 Ctrl+A 全選，再 Ctrl+C 複製</p>
+
+      <h3>🔄 共備流程</h3>
+      <div class="md-flow">
+        <div class="flow-step"><div class="step-num">1</div>跨域教師初次會議</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">2</div>各科填寫Markdown模板</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">3</div>上傳至Gemini Canvas</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">4</div>AI生成App原型</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">5</div>教師審閱修訂</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">6</div>學生使用前後測</div>
+      </div>
+    </div>
+
+  </div><!-- /pane-teacher -->
+
+</div><!-- /#app -->
+
+<script>
+/* ════════════════════════════════════════════
+   DATA
+════════════════════════════════════════════ */
+const PHASES=[
+  {name:'🌑 新月',short:'新月',emoji:'🌑',angle:0,  lunar:'農曆初一（朔）— 月球位於太陽與地球之間',  lit:'不可見',   best:'不易觀測（近太陽）'},
+  {name:'🌒 眉月',short:'眉月',emoji:'🌒',angle:45, lunar:'農曆初三～初五 — 日落後西方天空可見',      lit:'右側細弧', best:'日落後西方'},
+  {name:'🌓 上弦月',short:'上弦月',emoji:'🌓',angle:90, lunar:'農曆初七～初八（上弦）— 日落後南方可見',  lit:'右半（西）',best:'日落時南方'},
+  {name:'🌔 盈凸月',short:'盈凸月',emoji:'🌔',angle:135,lunar:'農曆十二～十四 — 傍晚東南方升起',        lit:'右大部分', best:'傍晚至深夜'},
+  {name:'🌕 滿月',short:'滿月',emoji:'🌕',angle:180,lunar:'農曆十五～十六（望）— 整夜可見',            lit:'全亮',     best:'整夜，東方升起'},
+  {name:'🌖 虧凸月',short:'虧凸月',emoji:'🌖',angle:225,lunar:'農曆十七～二十 — 深夜東方升起',          lit:'左大部分', best:'深夜至日出'},
+  {name:'🌗 下弦月',short:'下弦月',emoji:'🌗',angle:270,lunar:'農曆廿二～廿三（下弦）— 日出前南方可見', lit:'左半（東）',best:'日出前南方'},
+  {name:'🌘 殘月',short:'殘月',emoji:'🌘',angle:315,lunar:'農曆廿五～廿八 — 黎明前東方天空可見',       lit:'左側細弧', best:'黎明前東方'},
+];
+const PHASE_TABLE=[
+  ['🌑 新月','0°','初一','不可見','不易觀測'],
+  ['🌒 眉月','10°–80°','初三～五','右側細弧（西）','日落後西方'],
+  ['🌓 上弦月','90°','初七/八','右半亮（西側）','日落時南方'],
+  ['🌔 盈凸月','95°–175°','十二～十四','右大部分亮','傍晚至深夜'],
+  ['🌕 滿月','180°','十五/十六','全亮','整夜可見'],
+  ['🌖 虧凸月','185°–265°','十七～二十','左大部分亮','深夜至日出'],
+  ['🌗 下弦月','270°','廿二/三','左半亮（東側）','日出前南方'],
+  ['🌘 殘月','275°–355°','廿五～廿八','左側細弧（東）','黎明前東方'],
+];
+
+let currentAngle=0;
+let quizScore={correct:0,wrong:0};
+let currentQuiz=null;
+let quizAnswered=false;
+let currentUser={sid:'',name:''};
+
+/* ════════════════════════════════════════════
+   LOGIN
+════════════════════════════════════════════ */
+function doLogin(){
+  const sid=document.getElementById('loginId').value.trim();
+  const name=document.getElementById('loginName').value.trim();
+  const err=document.getElementById('loginErr');
+  if(!sid){err.textContent='請輸入學號';return}
+  if(!name){err.textContent='請輸入姓名';return}
+  if(!/^[A-Za-z0-9\-_]+$/.test(sid)){err.textContent='學號只能包含英數字、橫線或底線';return}
+  err.textContent='';
+  currentUser={sid,name};
+  localStorage.setItem('moonUser',JSON.stringify(currentUser));
+  document.getElementById('loginOverlay').style.display='none';
+  updateUserBar();
+  initApp();
+  // 登入時自動記錄出席到 Google Sheet
+  setTimeout(()=>{
+    sendToSheet({
+      ts: new Date().toLocaleString('zh-TW'),
+      sid,
+      name,
+      score: '（登入）',
+      text: '學生登入'
+    });
+  }, 800);
+}
+function doLogout(){
+  if(!confirm('確定要登出嗎？'))return;
+  localStorage.removeItem('moonUser');
+  currentUser={sid:'',name:''};
+  document.getElementById('loginOverlay').style.display='flex';
+  document.getElementById('loginId').value='';
+  document.getElementById('loginName').value='';
+  document.getElementById('loginErr').textContent='';
+}
+function resetLogin(){
+  // 清除所有本機記錄，回到全新登入狀態（測試/重置用）
+  if(!confirm('確定要清除所有本機記錄並重新登入嗎？\n（答題分數、學習反思、登入狀態都會清除）'))return;
+  localStorage.clear();
+  location.reload();
+}
+function updateUserBar(){
+  const{sid,name}=currentUser;
+  document.getElementById('userName').textContent=name;
+  document.getElementById('userId').textContent=`（${sid}）`;
+  document.getElementById('userAvatar').textContent=name.charAt(0)||'?';
+}
+// Enter key on login
+['loginId','loginName'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+});
+
+/* ════════════════════════════════════════════
+   DEVICE SELECTOR
+════════════════════════════════════════════ */
+function setDevice(v){
+  document.body.setAttribute('data-view',v);
+  document.querySelectorAll('.dev-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('dev-'+v).classList.add('active');
+  localStorage.setItem('moonDevice',v);
+  // Re-draw canvases after layout shift
+  setTimeout(()=>updateUI(currentAngle),50);
+}
+
+/* ════════════════════════════════════════════
+   GOOGLE SHEETS
+════════════════════════════════════════════ */
+let GS_URL='';
+function saveGsUrl(){
+  const u=document.getElementById('gsUrlInput').value.trim();
+  if(!u){setGsStatus('err','請貼上 Apps Script 部署網址');return}
+  // Accept both script.google.com/macros/s/.../exec and googleusercontent echo URLs
+  const valid = u.includes('script.google.com') || u.includes('script.googleusercontent.com');
+  if(!valid){setGsStatus('err','網址格式不正確，請確認是 script.google.com 或 script.googleusercontent.com 開頭');return}
+  GS_URL=u;
+  localStorage.setItem('moonGsUrl',u);
+  setGsStatus('ok','✅ 網址已儲存！學生答題與反思將自動上傳至 Google Sheet。');
+  updateSyncDot('ok','已連線');
+}
+function clearGsUrl(){
+  GS_URL='';localStorage.removeItem('moonGsUrl');
+  document.getElementById('gsUrlInput').value='';
+  setGsStatus('info','已清除，資料暫存於 localStorage');
+  updateSyncDot('','未設定');
+}
+async function testGsUrl(){
+  const u=document.getElementById('gsUrlInput').value.trim()||GS_URL;
+  if(!u){setGsStatus('err','請先填入網址');return}
+  setGsStatus('info','🔄 測試中...');
+  try{
+    await fetch(u,{method:'GET',mode:'no-cors'});
+    setGsStatus('ok','✅ 連線測試完成（no-cors 模式，無回應內容屬正常）');
+  }catch(err){
+    setGsStatus('err','❌ 連線失敗：'+err.message);
+  }
+}
+function setGsStatus(type,msg){
+  const el=document.getElementById('gsStatus');
+  el.className='gs-status '+type;
+  el.textContent=msg;
+}
+function updateSyncDot(state,label){
+  const dot=document.getElementById('syncDot');
+  const lbl=document.getElementById('syncLabel');
+  dot.className='sync-dot'+(state?' '+state:'');
+  lbl.textContent=label||'';
+}
+async function sendToSheet(data){
+  if(!GS_URL){updateSyncDot('','未設定');return false}
+  updateSyncDot('sending','傳送中...');
+  try{
+    // 必須用 text/plain，才能讓 no-cors 模式的 POST 成功送出
+    // Apps Script 的 e.postData.contents 仍可接收到 JSON 字串
+    await fetch(GS_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(data)
+    });
+    updateSyncDot('ok','已同步');
+    return true;
+  }catch(e){
+    updateSyncDot('err','同步失敗');
+    return false;
+  }
+}
+
+/* ════════════════════════════════════════════
+   DRAWING – Earth View (Taiwan/NH)
+════════════════════════════════════════════ */
+function drawEarthMoon(ctx,cx,cy,R,angle){
+  const θ=angle*Math.PI/180;
+  const dark='#0d1117',light='#dde5f0';
+  ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+  // Glow for full moon
+  if(angle>=160&&angle<=200){
+    const a=(1-Math.abs(angle-180)/20)*0.15;
+    const g=ctx.createRadialGradient(cx,cy,R*.8,cx,cy,R*1.6);
+    g.addColorStop(0,`rgba(220,210,170,${a})`);g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.6,0,2*Math.PI);ctx.fill();
+  }
+  // Dark base
+  ctx.fillStyle=dark;ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.fill();
+  // Craters
+  [{x:-.25,y:-.2,r:.12},{x:.3,y:.1,r:.18},{x:-.1,y:.4,r:.08},{x:.15,y:-.38,r:.1}]
+  .forEach(c=>{ctx.fillStyle='#141c2a';ctx.beginPath();ctx.arc(cx+c.x*R,cy+c.y*R,c.r*R,0,2*Math.PI);ctx.fill()});
+  // Lit portion (clip to circle)
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.clip();
+  const wax=angle<=180,ex=R*Math.abs(Math.cos(θ));
+  if(wax){
+    ctx.fillStyle=light;ctx.beginPath();ctx.arc(cx,cy,R,-Math.PI/2,Math.PI/2,false);ctx.lineTo(cx,cy-R);ctx.fill();
+    ctx.beginPath();ctx.ellipse(cx,cy,ex,R,0,0,2*Math.PI);
+    ctx.fillStyle=angle<90?dark:light;ctx.fill();
+  }else{
+    ctx.fillStyle=light;ctx.beginPath();ctx.arc(cx,cy,R,Math.PI/2,Math.PI*1.5,false);ctx.lineTo(cx,cy+R);ctx.fill();
+    ctx.beginPath();ctx.ellipse(cx,cy,ex,R,0,0,2*Math.PI);
+    ctx.fillStyle=angle<=270?light:dark;ctx.fill();
+  }
+  ctx.restore();
+  // 3D highlight
+  const hl=ctx.createRadialGradient(cx-R*.3,cy-R*.35,R*.05,cx,cy,R);
+  hl.addColorStop(0,'rgba(255,255,255,.08)');hl.addColorStop(.5,'transparent');hl.addColorStop(1,'rgba(0,0,0,.35)');
+  ctx.fillStyle=hl;ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.fill();
+  ctx.strokeStyle='#3a4a65';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.stroke();
+}
+
+/* ════════════════════════════════════════════
+   DRAWING – Space View (Top-Down, N pole)
+════════════════════════════════════════════ */
+function drawSpaceView(ctx,angle){
+  const W=ctx.canvas.width,H=ctx.canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,oR=Math.min(W,H)*.32,θ=angle*Math.PI/180;
+  // BG
+  ctx.fillStyle='#060a12';ctx.fillRect(0,0,W,H);
+  // Stars
+  [[20,15],[45,30],[195,18],[235,40],[12,100],[248,90],[18,200],[240,170],[85,248],[198,242]].forEach(([sx,sy])=>{
+    ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.arc(sx,sy,.8,0,2*Math.PI);ctx.fill()});
+  // Orbit
+  ctx.setLineDash([4,6]);ctx.strokeStyle='#1e3050';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(cx,cy,oR,0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);
+  // Sun (right)
+  const sX=cx+oR+50,sY=cy;
+  const sg=ctx.createRadialGradient(sX,sY,2,sX,sY,26);
+  sg.addColorStop(0,'#fff8e0');sg.addColorStop(.4,'#fbbf24');sg.addColorStop(1,'rgba(251,191,36,0)');
+  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sX,sY,26,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(sX,sY,14,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='#fef3c7';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText('太陽',sX,sY+28);
+  // Sunlight rays
+  ctx.strokeStyle='rgba(251,191,36,.1)';ctx.lineWidth=7;
+  for(let ry=-35;ry<=35;ry+=14){ctx.beginPath();ctx.moveTo(sX-22,cy+ry);ctx.lineTo(cx+oR+6,cy+ry);ctx.stroke()}
+  // Moon position (counter-clockwise: θ=0→right, θ=90→top)
+  const mX=cx+oR*Math.cos(θ),mY=cy-oR*Math.sin(θ),mR=10;
+  // Earth-moon line
+  ctx.strokeStyle='rgba(160,100,240,.4)';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(mX,mY);ctx.stroke();ctx.setLineDash([]);
+  // Sun-earth reference
+  ctx.strokeStyle='rgba(251,191,36,.2)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(sX-14,cy);ctx.stroke();
+  // Angle arc
+  if(angle>2&&angle<358){
+    ctx.strokeStyle='#c084fc';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy,22,0,-θ,true);ctx.stroke();
+    ctx.fillStyle='#c084fc';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+    ctx.fillText('θ',cx+38*Math.cos(-θ/2),cy+38*Math.sin(-θ/2));
+  }
+  // Earth
+  const eg=ctx.createRadialGradient(cx-4,cy-4,1,cx,cy,13);
+  eg.addColorStop(0,'#60a5fa');eg.addColorStop(.5,'#2563eb');eg.addColorStop(1,'#1e3a8a');
+  ctx.fillStyle=eg;ctx.beginPath();ctx.arc(cx,cy,13,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='#16a34a';ctx.beginPath();ctx.ellipse(cx-2,cy-3,4,2.5,.4,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='#bfdbfe';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.fillText('地球',cx,cy+24);
+  // Moon
+  const mToS=Math.atan2(-(cy-mY),sX-mX);
+  ctx.fillStyle='#0d1117';ctx.beginPath();ctx.arc(mX,mY,mR,0,2*Math.PI);ctx.fill();
+  ctx.save();ctx.beginPath();ctx.arc(mX,mY,mR,0,2*Math.PI);ctx.clip();
+  ctx.fillStyle='#d1d5db';ctx.beginPath();
+  ctx.arc(mX,mY,mR,mToS-Math.PI/2,mToS+Math.PI/2,false);ctx.lineTo(mX,mY);ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle='#3a4a65';ctx.lineWidth=1;ctx.beginPath();ctx.arc(mX,mY,mR,0,2*Math.PI);ctx.stroke();
+  const la=Math.atan2(mY-cy,mX-cx);
+  ctx.fillStyle='#94a3b8';ctx.font='9px sans-serif';ctx.textAlign='center';
+  ctx.fillText('月球',mX+(mR+12)*Math.cos(la),mY+(mR+12)*Math.sin(la)+3);
+  // Angle label
+  ctx.fillStyle='#f4c842';ctx.font='bold 10px sans-serif';ctx.textAlign='right';
+  ctx.fillText('θ='+angle+'°',W-4,H-4);
+  ctx.fillStyle='#1e3050';ctx.font='9px sans-serif';ctx.textAlign='left';ctx.fillText('↺逆時針公轉',4,13);
+}
+
+/* ════════════════════════════════════════════
+   UI UPDATE
+════════════════════════════════════════════ */
+function getPhaseDef(angle){
+  const a=((angle%360)+360)%360;
+  if(a<10||a>=355)return PHASES[0];
+  if(a<85)return PHASES[1];if(a<95)return PHASES[2];
+  if(a<175)return PHASES[3];if(a<185)return PHASES[4];
+  if(a<265)return PHASES[5];if(a<275)return PHASES[6];
+  return PHASES[7];
+}
+function pad(n){return String(Math.floor(n)%24).padStart(2,'0')}
+
+function updateUI(angle){
+  currentAngle=angle;
+  const ph=getPhaseDef(angle),θ=angle*Math.PI/180;
+  const L=(1-Math.cos(θ))/2,D=angle/360*29.53;
+  const day=angle===0?1:Math.max(1,Math.round(D));
+  // Canvases
+  const ec=document.getElementById('earthCanvas'),sc=document.getElementById('spaceCanvas');
+  drawEarthMoon(ec.getContext('2d'),ec.width/2,ec.height/2,Math.min(ec.width,ec.height)/2*.88,angle);
+  drawSpaceView(sc.getContext('2d'),angle);
+  // Text
+  document.getElementById('angleDisplay').textContent=angle+'°';
+  document.getElementById('phaseName').textContent=ph.name;
+  document.getElementById('phaseDesc').textContent=ph.lunar;
+  document.getElementById('earthLabel').textContent=ph.short+'—'+ph.lit;
+  document.getElementById('brightnessLabel').textContent=Math.round(L*100)+'%';
+  document.getElementById('brightnessBar').style.width=L*100+'%';
+  document.getElementById('lunarDay').textContent='第 '+day+' 天';
+  document.getElementById('lunarBright').textContent=L.toFixed(2);
+  document.getElementById('thetaVal').textContent=angle+'°';
+  document.getElementById('cosVal').textContent=Math.cos(θ).toFixed(3);
+  document.getElementById('oneMinCos').textContent=(1-Math.cos(θ)).toFixed(3);
+  document.getElementById('lVal').textContent=L.toFixed(3);
+  document.getElementById('dVal').textContent=D.toFixed(1);
+  const rH=6+angle/360*24;
+  document.getElementById('moonRise').textContent='約'+pad(rH)+':'+String(Math.round((rH%1)*60)).padStart(2,'0');
+  document.getElementById('moonTransit').textContent='約'+pad(rH+6)+':00';
+  document.getElementById('moonSet').textContent='約'+pad(rH+12)+':00';
+  document.getElementById('bestView').textContent=ph.best;
+  // Timeline
+  document.querySelectorAll('.pt-item').forEach(item=>{
+    const a=parseInt(item.dataset.angle),diff=Math.min(Math.abs(angle-a),360-Math.abs(angle-a));
+    item.classList.toggle('active',diff<23);
+  });
+}
+
+/* ════════════════════════════════════════════
+   QUIZ
+════════════════════════════════════════════ */
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]};return b}
+
+const QUIZ_TYPES=[
+  {type:'月相名稱辨識',gen:()=>{
+    const p=PHASES[Math.floor(Math.random()*PHASES.length)];
+    const w=shuffle(PHASES.filter(x=>x.short!==p.short)).slice(0,3).map(x=>x.short);
+    return{question:`夾角 θ = <span class="hl">${p.angle}°</span> 時，台灣觀測到的月相名稱為？`,answer:p.short,options:shuffle([p.short,...w]),showMoon:true,moonAngle:p.angle,exp:`θ=${p.angle}°為${p.short}，${p.lunar}`};
+  }},
+  {type:'月相圖形辨識',gen:()=>{
+    const p=PHASES[Math.floor(Math.random()*PHASES.length)];
+    const w=shuffle(PHASES.filter(x=>x.short!==p.short)).slice(0,3).map(x=>x.short);
+    return{question:`觀察下方月相圖，這是哪種月相？（台灣北半球視角）`,answer:p.short,options:shuffle([p.short,...w]),showMoon:true,moonAngle:p.angle,exp:`圖中為${p.short}（θ=${p.angle}°），${p.lunar}`};
+  }},
+  {type:'農曆日期推算',gen:()=>{
+    const p=PHASES[Math.floor(Math.random()*PHASES.length)];
+    const days=['初一','初三～五','初七/八','十二～十四','十五/十六','十七～二十','廿二/三','廿五～廿八'][PHASES.indexOf(p)];
+    const w=shuffle(PHASES.filter(x=>x.short!==p.short)).slice(0,3).map(x=>x.short);
+    return{question:`農曆 <span class="hl">${days}</span> 前後，天空中的月相為何？`,answer:p.short,options:shuffle([p.short,...w]),showMoon:false,exp:`農曆${days}對應${p.short}（θ≈${p.angle}°）`};
+  }},
+  {type:'亮度計算',gen:()=>{
+    const aa=[0,60,90,120,180,240,270,300];
+    const a=aa[Math.floor(Math.random()*aa.length)];
+    const L=(1-Math.cos(a*Math.PI/180))/2,pct=Math.round(L*100);
+    const wp=[0,25,50,75,100].filter(x=>x!==pct);
+    const w=shuffle(wp).slice(0,3).map(x=>x+'%');
+    return{question:`L=(1−cosθ)÷2，θ=<span class="hl">${a}°</span> 時，亮度約為？`,answer:pct+'%',options:shuffle([pct+'%',...w]),showMoon:true,moonAngle:a,exp:`L=(1−cos${a}°)/2=(1−${Math.cos(a*Math.PI/180).toFixed(2)})/2≈${L.toFixed(2)}=${pct}%`};
+  }},
+  {type:'台灣觀測方向',gen:()=>{
+    const ps=[
+      {q:'台灣觀測<span class="hl">上弦月</span>，亮面朝向哪側？',a:'右側（西側）',o:['左側（東側）','右側（西側）','上方（北側）','下方（南側）']},
+      {q:'台灣觀測<span class="hl">下弦月</span>，亮面朝向哪側？',a:'左側（東側）',o:['左側（東側）','右側（西側）','完全不可見','上方（北側）']},
+      {q:'<span class="hl">滿月</span>大約幾點從東方升起？',a:'約日落時（18:00）',o:['約日落時（18:00）','約正午（12:00）','約午夜（00:00）','約日出時（06:00）']},
+      {q:'<span class="hl">新月</span>為何幾乎無法用肉眼觀測？',a:'月球與太陽同方向，亮面背對地球',o:['月球與太陽同方向，亮面背對地球','月球在地平線以下','月球距離太遠','農曆初一雲層最厚']},
+      {q:'月出時間每天延遲約多少分鐘？',a:'約50分鐘',o:['約10分鐘','約30分鐘','約50分鐘','約90分鐘']},
+    ];
+    const p=ps[Math.floor(Math.random()*ps.length)];
+    return{question:p.q,answer:p.a,options:shuffle([...p.o]),showMoon:false,exp:'正確：'+p.a};
+  }},
+];
+
+function generateNewQuiz(){
+  quizAnswered=false;
+  const t=QUIZ_TYPES[Math.floor(Math.random()*QUIZ_TYPES.length)];
+  currentQuiz=t.gen();
+  document.getElementById('quizQType').textContent=t.type;
+  document.getElementById('quizQuestion').innerHTML=currentQuiz.question;
+  const wrap=document.getElementById('quizMoonWrap');
+  if(currentQuiz.showMoon){
+    wrap.style.display='flex';
+    const c=document.getElementById('quizMoonCanvas');
+    drawEarthMoon(c.getContext('2d'),75,75,60,currentQuiz.moonAngle);
+  }else{wrap.style.display='none'}
+  const optDiv=document.getElementById('quizOptions');
+  optDiv.innerHTML='';
+  currentQuiz.options.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='opt-btn';btn.textContent=opt;
+    btn.onclick=()=>checkAnswer(opt,btn);
+    optDiv.appendChild(btn);
+  });
+  document.getElementById('quizFeedback').className='quiz-feedback';
+  document.getElementById('quizFeedback').textContent='';
+}
+
+function checkAnswer(sel,btn){
+  if(quizAnswered)return;
+  quizAnswered=true;
+  const ok=sel===currentQuiz.answer;
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===currentQuiz.answer)b.classList.add('correct');
+    else if(b===btn&&!ok)b.classList.add('wrong');
+  });
+  const fb=document.getElementById('quizFeedback');
+  fb.className='quiz-feedback show '+(ok?'correct-fb':'wrong-fb');
+  fb.textContent=(ok?'🎉 答對了！':'💡 再想想！')+currentQuiz.exp;
+  if(ok){quizScore.correct++;launchFireworks()}else{quizScore.wrong++}
+  updateScore();
+  // 每題不單獨上傳，等學生儲存反思時一次送出完整紀錄
+}
+function updateScore(){
+  const tot=quizScore.correct+quizScore.wrong;
+  document.getElementById('scoreCorrect').textContent=quizScore.correct;
+  document.getElementById('scoreWrong').textContent=quizScore.wrong;
+  document.getElementById('scoreTotal').textContent=tot;
+  document.getElementById('scorePct').textContent=tot>0?Math.round(quizScore.correct/tot*100)+'%':'—';
+}
+function resetScore(){quizScore={correct:0,wrong:0};updateScore();generateNewQuiz()}
+
+/* ════════════════════════════════════════════
+   FIREWORKS
+════════════════════════════════════════════ */
+const fwC=document.getElementById('fireworks-canvas');
+const fwX=fwC.getContext('2d');
+let fwP=[],fwF=null;
+function launchFireworks(){
+  fwC.style.display='block';fwC.width=window.innerWidth;fwC.height=window.innerHeight;
+  for(let i=0;i<4;i++)setTimeout(()=>burst(Math.random()*fwC.width*.8+fwC.width*.1,Math.random()*fwC.height*.5+50),i*200);
+  if(fwF)cancelAnimationFrame(fwF);animFw();
+  setTimeout(()=>{fwC.style.display='none';fwP=[]},2800);
+}
+function burst(x,y){
+  const cols=['#f4c842','#60a5fa','#c084fc','#34d399','#f87171','#fbbf24','#67e8f9'];
+  for(let i=0;i<50;i++){const a=Math.random()*Math.PI*2,s=Math.random()*6+2;fwP.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.5,color:cols[Math.floor(Math.random()*cols.length)],life:1,sz:Math.random()*3+1})}
+}
+function animFw(){
+  fwX.clearRect(0,0,fwC.width,fwC.height);fwP=fwP.filter(p=>p.life>0);
+  fwP.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=.018;p.vx*=.98;
+    fwX.globalAlpha=Math.max(0,p.life);fwX.fillStyle=p.color;
+    fwX.beginPath();fwX.arc(p.x,p.y,p.sz,0,2*Math.PI);fwX.fill()});
+  fwX.globalAlpha=1;fwF=requestAnimationFrame(animFw);
+}
+
+/* ════════════════════════════════════════════
+   REFLECTION
+════════════════════════════════════════════ */
+function saveReflection(){
+  const txt=document.getElementById('reflectionText').value.trim();
+  const msg=document.getElementById('reflectMsg');
+  if(!txt){msg.className='reflect-msg err';msg.textContent='請先輸入反思內容！';return}
+  const ts=new Date().toLocaleString('zh-TW');
+  const total=quizScore.correct+quizScore.wrong;
+  const pct=total>0?Math.round(quizScore.correct/total*100):0;
+  const scoreStr=total>0?`${quizScore.correct}/${total} (${pct}%)`:'未作答';
+  // 儲存到 localStorage
+  const saved=JSON.parse(localStorage.getItem('moonReflections')||'[]');
+  const rec={text:txt,time:ts,sid:currentUser.sid,name:currentUser.name,score:scoreStr};
+  saved.unshift(rec);if(saved.length>10)saved.pop();
+  localStorage.setItem('moonReflections',JSON.stringify(saved));
+  msg.className='reflect-msg ok';msg.textContent='✅ 儲存中，上傳至 Google Sheet...';
+  renderSavedList();
+  // 上傳一筆完整紀錄至 Google Sheet（對應工作表1欄位）
+  sendToSheet({
+    ts,                       // A: 登入日期時間
+    sid:currentUser.sid,      // B: 學號
+    name:currentUser.name,    // C: 姓名
+    score:scoreStr,           // D: 答題挑戰得分
+    text:txt                  // E: 學習反思
+  }).then(ok=>{
+    msg.textContent = ok ? '✅ 已儲存並上傳至 Google Sheet！' : '✅ 已儲存（離線，未上傳）';
+    setTimeout(()=>msg.textContent='',4000);
+  });
+}
+function loadExample(){
+  document.getElementById('reflectionText').value=
+    '我發現月相是因為太陽照射角度不同造成的，而不是地球的影子。\n'+
+    '用L=(1−cosθ)/2公式計算：\n'+
+    '• 上弦月θ=90°：L=(1−0)/2=0.5=50%（右半亮）✓\n'+
+    '• 滿月θ=180°：L=(1−(−1))/2=100%（全亮）✓\n'+
+    '• 下弦月θ=270°：L=(1−0)/2=50%（左半亮）✓\n\n'+
+    '台灣特色：上弦月亮面在右側（西側），下弦月亮面在左側（東側）。';
+}
+function renderSavedList(){
+  const saved=JSON.parse(localStorage.getItem('moonReflections')||'[]');
+  const list=document.getElementById('savedList');
+  list.innerHTML=saved.map((s,i)=>`
+    <div class="saved-item">
+      <div class="si-time">📅 ${s.time}｜${s.name||''}（${s.sid||''}）</div>
+      <div>${s.text.slice(0,100)}${s.text.length>100?'...':''}</div>
+      <button class="si-del" onclick="delReflection(${i})">✕</button>
+    </div>`).join('');
+}
+function delReflection(i){
+  const s=JSON.parse(localStorage.getItem('moonReflections')||'[]');
+  s.splice(i,1);localStorage.setItem('moonReflections',JSON.stringify(s));renderSavedList();
+}
+
+/* ════════════════════════════════════════════
+   TABS
+════════════════════════════════════════════ */
+function switchTab(n){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+  document.getElementById('pane-'+n).classList.add('active');
+  if(n==='observe')setTimeout(()=>updateUI(currentAngle),30);
+}
+
+/* ════════════════════════════════════════════
+   PHASE TABLE
+════════════════════════════════════════════ */
+function buildPhaseTable(){
+  const tbody=document.getElementById('phaseTable');
+  PHASE_TABLE.forEach(([name,angle,lunar,lit,best],i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-weight:600;color:#d8e4f0">${name}</td>
+      <td style="color:#f4c842">${angle}</td><td style="color:#86efac">${lunar}</td>
+      <td style="color:#67e8f9">${lit}</td><td style="color:#c084fc;font-size:.62rem">${best}</td>`;
+    if(i%2)tr.style.background='rgba(30,42,61,.3)';
+    tbody.appendChild(tr);
+  });
+}
+
+/* ════════════════════════════════════════════
+   COPY UTILS
+════════════════════════════════════════════ */
+function copyScriptCode(){
+  const ta=document.getElementById('scriptCodeArea');
+  ta.select();ta.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(ta.value).then(()=>{
+    const btn=ta.parentElement.querySelector('.copy-btn');
+    btn.textContent='✅ 已複製！';setTimeout(()=>btn.textContent='📋 全部複製',2000);
+  }).catch(()=>{document.execCommand('copy')});
+}
+function copyMarkdownCode(){
+  const ta=document.getElementById('markdownArea');
+  ta.select();ta.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(ta.value).then(()=>{
+    const btn=ta.parentElement.querySelector('.copy-btn');
+    btn.textContent='✅ 已複製！';setTimeout(()=>btn.textContent='📋 全部複製',2000);
+  }).catch(()=>{document.execCommand('copy')});
+}
+
+/* ════════════════════════════════════════════
+   FILL CODE TEXTAREAS
+════════════════════════════════════════════ */
+function fillCodeBlocks(){
+  // ── Apps Script ──────────────────────────────────────────────────────────────
+  // 配合 Google Sheet 欄位：登入日期時間 | 學號 | 姓名 | 答題挑戰得分 | 學習反思
+  document.getElementById('scriptCodeArea').value =
+[
+"// =============================================",
+"// 月相學習 App - Google Apps Script",
+"// Google Sheet 欄位對應（工作表1）：",
+"//   A:登入日期時間  B:學號  C:姓名",
+"//   D:答題挑戰得分  E:學習反思",
+"// 部署設定：執行身分=我，存取=任何人",
+"// =============================================",
+"",
+"const SHEET_ID = '1NZy81I3hKw3C9-1fzf51h-lGweVT0nFowXNk_n_QaDU';",
+"const SHEET_NAME = '工作表1';  // 與試算表工作表名稱一致",
+"",
+"function doPost(e) {",
+"  try {",
+"    // 支援 text/plain 與 application/json 兩種 Content-Type",
+"    const raw = e.postData ? e.postData.contents : '{}';",
+"    const data = JSON.parse(raw);",
+"    const ss = SpreadsheetApp.openById(SHEET_ID);",
+"    const sh = ss.getSheetByName(SHEET_NAME);",
+"",
+"    if (!sh) {",
+"      return ContentService",
+"        .createTextOutput(JSON.stringify({ok:false, error:'找不到工作表: ' + SHEET_NAME}))",
+"        .setMimeType(ContentService.MimeType.JSON);",
+"    }",
+"",
+"    // 寫入一筆學生學習紀錄",
+"    sh.appendRow([",
+"      data.ts    || new Date().toLocaleString('zh-TW'),  // A: 登入日期時間",
+"      data.sid   || '',                                  // B: 學號",
+"      data.name  || '',                                  // C: 姓名",
+"      data.score || '',                                  // D: 答題挑戰得分",
+"      data.text  || ''                                   // E: 學習反思",
+"    ]);",
+"",
+"    return ContentService",
+"      .createTextOutput(JSON.stringify({ok: true}))",
+"      .setMimeType(ContentService.MimeType.JSON);",
+"",
+"  } catch(err) {",
+"    return ContentService",
+"      .createTextOutput(JSON.stringify({ok: false, error: err.message}))",
+"      .setMimeType(ContentService.MimeType.JSON);",
+"  }",
+"}",
+"",
+"// GET 測試 - 瀏覽器開啟 /exec 網址應出現此回應",
+"function doGet(e) {",
+"  return ContentService",
+"    .createTextOutput(JSON.stringify({ok: true, msg: 'Moon Phase App API Ready'}))",
+"    .setMimeType(ContentService.MimeType.JSON);",
+"}"
+].join('\n');
+
+  // ── Markdown Template ─────────────────────────────────────────────────────
+  document.getElementById('markdownArea').value =
+[
+"# 跨域互動學習 App 開發需求書",
+"",
+"## 基本資訊",
+"- 協作科目A：[自然科] 教師：[姓名]",
+"- 協作科目B：[數學科] 教師：[姓名]",
+"- 教學單元：[月相變化] 年級：[八年級]",
+"- 使用模型：[Gemini / Claude / ChatGPT]",
+"- 開發語言：HTML+CSS+JavaScript（單一檔案）",
+"",
+"## 自然科核心概念",
+"### 學習目標",
+"1. 說明月相成因（月球反射太陽光，非自行發光）",
+"2. 辨識八大月相名稱與日-地-月幾何位置",
+"3. 根據月相判斷農曆日期",
+"4. 了解台灣（北半球）觀測特色",
+"",
+"### 重要迷思澄清",
+"- 迷思：月相是地球的影子 => 正確：我們看到的亮面比例不同",
+"- 迷思：南北半球月相相同 => 正確：上下弦月方向相反",
+"- 台灣觀測：上弦月亮面在右（西），下弦月亮面在左（東）",
+"",
+"## 數學科核心概念",
+"### 公式與計算",
+"- 亮度函數：L(theta) = (1 - cos theta) / 2",
+"- 週期比例：D = theta / 360 x 29.53",
+"- 每日角速度：360 / 29.53 約= 12.2 度/天",
+"",
+"### 計算範例",
+"- 上弦月 theta=90: L=(1-cos90)/2=(1-0)/2=0.5=50%",
+"- 滿月 theta=180: L=(1-cos180)/2=(1-(-1))/2=1=100%",
+"- 下弦月 theta=270: L=(1-cos270)/2=(1-0)/2=0.5=50%",
+"",
+"## App 功能需求",
+"### 必備功能",
+"- 角度滑桿（0~360度）即時互動",
+"- 地球觀測者視角月相圖（台灣北半球正確）",
+"- 太空俯視幾何圖（日-地-月位置，月球逆時針公轉）",
+"- 月相名稱/農曆日期/亮度資訊面板（含數學計算步驟）",
+"- 隨機多題型測驗（5種題型）與即時回饋",
+"- 學習反思輸入與儲存（localStorage）",
+"",
+"### 進階功能",
+"- 答對時煙火動畫慶祝效果",
+"- 月出/月中天/月落觀測時間（台灣）",
+"- 八大月相快速切換時間軸",
+"- Google Sheet 資料回傳（Apps Script）",
+"- RWD 響應式設計 + 手機/平板/電腦視圖切換",
+"- 登入畫面（學號+姓名驗證）",
+"",
+"## 介面設計要求",
+"- 深色太空主題（深藍/黑背景，星空效果）",
+"- 繁體中文介面（適合台灣國中生）",
+"- 響應式設計（可在手機/平板/電腦使用）",
+"- Canvas 繪圖（不依賴外部圖片）",
+"",
+"## 給 AI 的提示詞",
+"請根據以上需求書，開發完整的月相變化互動學習 App。",
+"要求：",
+"1. 純 HTML+CSS+JS 單一 .html 檔案",
+"2. 月相繪製必須符合台灣（北半球）觀測正確性",
+"3. 亮度公式 L=(1-cosθ)/2 要即時顯示計算過程",
+"4. 測驗題目包含5種題型",
+"5. 深色太空主題，繁體中文，RWD，Canvas繪圖",
+"6. 含煙火動畫、Google Sheet串接、登入畫面",
+"請直接輸出完整可執行的 HTML 程式碼。"
+].join('\n');
+}
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+function initApp(){
+  document.getElementById('angleSlider').addEventListener('input',e=>updateUI(parseInt(e.target.value)));
+  updateUI(0);buildPhaseTable();generateNewQuiz();renderSavedList();
+  fillCodeBlocks();
+  // Phase timeline clicks
+  document.querySelectorAll('.pt-item').forEach(item=>{
+    item.addEventListener('click',()=>{
+      const a=parseInt(item.dataset.angle);
+      document.getElementById('angleSlider').value=a;updateUI(a);
+    });
+  });
+  window.addEventListener('resize',()=>{fwC.width=window.innerWidth;fwC.height=window.innerHeight});
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  // Restore device preference
+  const dev=localStorage.getItem('moonDevice')||'auto';
+  setDevice(dev);
+  // Restore GS URL
+  const gsUrl=localStorage.getItem('moonGsUrl')||'';
+  // 預設已知的部署網址（若 localStorage 已有則優先使用）
+  const DEFAULT_GS='https://script.google.com/macros/s/AKfycbxvkotTfvjUaS46pfuwXbbKWTN_HPP7ehaoRQ18kUmqoZOWOXW0nt9wnRVqzNfsBvAo/exec';
+  const activeUrl = gsUrl || DEFAULT_GS;
+  GS_URL=activeUrl;
+  document.getElementById('gsUrlInput').value=activeUrl;
+  if(activeUrl){updateSyncDot('ok','已設定');setGsStatus('ok','✅ Apps Script 已連線（學生儲存反思時自動上傳）')}
+  // Auto-login if session saved
+  const u=JSON.parse(localStorage.getItem('moonUser')||'null');
+  if(u&&u.sid&&u.name){
+    currentUser=u;
+    document.getElementById('loginOverlay').style.display='none';
+    updateUserBar();initApp();
+  }
+});
+</script>
+</body>
+</html>
